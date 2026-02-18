@@ -1,13 +1,14 @@
 /**
  * API Configuration
  * 
- * In a production app, set the BASE_URL to your NestJS backend on Render.
- * For now, we use mock data via Zustand stores.
+ * For local development, the NestJS backend runs on http://localhost:3000/api.
+ * For production, replace BASE_URL with your NestJS Render deployment URL.
  */
 
 const API_CONFIG = {
-    // Replace with your NestJS Render URL when available
-    BASE_URL: 'https://your-nestjs-api.onrender.com',
+    // Local dev: 'http://localhost:3000/api'
+    // Production: 'https://your-nestjs-api.onrender.com/api'
+    BASE_URL: 'http://localhost:3000/api',
     TIMEOUT: 10000,
     HEADERS: {
         'Content-Type': 'application/json',

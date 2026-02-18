@@ -41,6 +41,7 @@ export const Avatar: React.FC<AvatarProps> = ({
                         borderRadius: (size - borderWidth * 2) / 2,
                     },
                 ]}
+                resizeMode="cover"
                 defaultSource={require('../../../assets/favicon.png')}
             />
         </View>
@@ -55,6 +56,5 @@ const styles = StyleSheet.create({
         backgroundColor: colors.backgroundSecondary,
     },
     image: {
-        resizeMode: 'cover',
     },
 });
