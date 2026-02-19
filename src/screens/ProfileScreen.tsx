@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef, useEffect } from 'react';
 import {
     View,
     Text,
@@ -6,6 +6,7 @@ import {
     StatusBar,
     TouchableOpacity,
     ScrollView,
+    Animated,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -18,6 +19,7 @@ interface ProfileMenuItemProps {
     label: string;
     onPress?: () => void;
     isDestructive?: boolean;
+    index?: number;
 }
 
 const ProfileMenuItem: React.FC<ProfileMenuItemProps> = ({
@@ -25,37 +27,106 @@ const ProfileMenuItem: React.FC<ProfileMenuItemProps> = ({
     label,
     onPress,
     isDestructive,
-}) => (
-    <TouchableOpacity
-        style={styles.menuItem}
-        onPress={onPress}
-        activeOpacity={0.7}
-    >
-        <View style={styles.menuItemLeft}>
-            <View
-                style={[
-                    styles.menuIconContainer,
-                    isDestructive && styles.menuIconDestructive,
-                ]}
+    index = 0,
+}) => {
+    const scaleAnim = useRef(new Animated.Value(1)).current;
+
+    const handlePressIn = () => {
+        Animated.spring(scaleAnim, {
+            toValue: 0.97,
+            friction: 8,
+            tension: 100,
+            useNativeDriver: true,
+        }).start();
+    };
+
+    const handlePressOut = () => {
+        Animated.spring(scaleAnim, {
+            toValue: 1,
+            friction: 5,
+            tension: 40,
+            useNativeDriver: true,
+        }).start();
+    };
+
+    return (
+        <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
+            <TouchableOpacity
+                style={styles.menuItem}
+                onPress={onPress}
+                onPressIn={handlePressIn}
+                onPressOut={handlePressOut}
+                activeOpacity={1}
             >
-                <Ionicons
-                    name={icon}
-                    size={20}
-                    color={isDestructive ? colors.error : colors.primary}
-                />
-            </View>
-            <Text
-                style={[styles.menuItemText, isDestructive && styles.menuItemDestructive]}
-            >
-                {label}
-            </Text>
-        </View>
-        <Ionicons name="chevron-forward" size={18} color={colors.textTertiary} />
-    </TouchableOpacity>
-);
+                <View style={styles.menuItemLeft}>
+                    <View
+                        style={[
+                            styles.menuIconContainer,
+                            isDestructive && styles.menuIconDestructive,
+                        ]}
+                    >
+                        <Ionicons
+                            name={icon}
+                            size={20}
+                            color={isDestructive ? colors.error : colors.primary}
+                        />
+                    </View>
+                    <Text
+                        style={[styles.menuItemText, isDestructive && styles.menuItemDestructive]}
+                    >
+                        {label}
+                    </Text>
+                </View>
+                <Ionicons name="chevron-forward" size={18} color={colors.textTertiary} />
+            </TouchableOpacity>
+        </Animated.View>
+    );
+};
 
 export const ProfileScreen: React.FC = () => {
     const { user, logout } = useUserStore();
+
+    const headerOpacity = useRef(new Animated.Value(0)).current;
+    const profileCardScale = useRef(new Animated.Value(0.9)).current;
+    const profileCardOpacity = useRef(new Animated.Value(0)).current;
+    const menuOpacity = useRef(new Animated.Value(0)).current;
+    const menuTranslateY = useRef(new Animated.Value(20)).current;
+
+    useEffect(() => {
+        Animated.stagger(150, [
+            Animated.timing(headerOpacity, {
+                toValue: 1,
+                duration: 400,
+                useNativeDriver: true,
+            }),
+            Animated.parallel([
+                Animated.spring(profileCardScale, {
+                    toValue: 1,
+                    friction: 6,
+                    tension: 50,
+                    useNativeDriver: true,
+                }),
+                Animated.timing(profileCardOpacity, {
+                    toValue: 1,
+                    duration: 400,
+                    useNativeDriver: true,
+                }),
+            ]),
+            Animated.parallel([
+                Animated.timing(menuOpacity, {
+                    toValue: 1,
+                    duration: 400,
+                    useNativeDriver: true,
+                }),
+                Animated.spring(menuTranslateY, {
+                    toValue: 0,
+                    friction: 8,
+                    tension: 50,
+                    useNativeDriver: true,
+                }),
+            ]),
+        ]).start();
+    }, []);
 
     return (
         <SafeAreaView style={styles.container} edges={['top']}>
@@ -66,19 +137,27 @@ export const ProfileScreen: React.FC = () => {
                 contentContainerStyle={styles.scrollContent}
             >
                 {/* Header */}
-                <View style={styles.header}>
+                <Animated.View style={[styles.header, { opacity: headerOpacity }]}>
                     <Text style={styles.headerTitle}>Profile</Text>
-                    <TouchableOpacity style={styles.settingsButton}>
+                    <TouchableOpacity style={styles.settingsButton} activeOpacity={0.7}>
                         <Ionicons
                             name="settings-outline"
                             size={22}
                             color={colors.textPrimary}
                         />
                     </TouchableOpacity>
-                </View>
+                </Animated.View>
 
                 {/* Profile Card */}
-                <View style={styles.profileCard}>
+                <Animated.View
+                    style={[
+                        styles.profileCard,
+                        {
+                            opacity: profileCardOpacity,
+                            transform: [{ scale: profileCardScale }],
+                        },
+                    ]}
+                >
                     <Avatar
                         uri={user?.avatar || ''}
                         size={72}
@@ -87,44 +166,52 @@ export const ProfileScreen: React.FC = () => {
                     />
                     <Text style={styles.userName}>{user?.name || 'User'}</Text>
                     <Text style={styles.userRole}>{user?.role || 'Role'}</Text>
-                    <TouchableOpacity style={styles.editProfileButton}>
+                    <TouchableOpacity style={styles.editProfileButton} activeOpacity={0.7}>
                         <Text style={styles.editProfileText}>Edit Profile</Text>
                     </TouchableOpacity>
-                </View>
+                </Animated.View>
 
                 {/* Menu Section */}
-                <View style={styles.menuSection}>
-                    <Text style={styles.menuSectionTitle}>General</Text>
-                    <View style={styles.menuCard}>
-                        <ProfileMenuItem icon="person-outline" label="Personal Information" />
-                        <ProfileMenuItem icon="notifications-outline" label="Notifications" />
-                        <ProfileMenuItem icon="shield-checkmark-outline" label="Security" />
-                        <ProfileMenuItem icon="language-outline" label="Language" />
+                <Animated.View
+                    style={{
+                        opacity: menuOpacity,
+                        transform: [{ translateY: menuTranslateY }],
+                    }}
+                >
+                    <View style={styles.menuSection}>
+                        <Text style={styles.menuSectionTitle}>General</Text>
+                        <View style={styles.menuCard}>
+                            <ProfileMenuItem icon="person-outline" label="Personal Information" index={0} />
+                            <ProfileMenuItem icon="notifications-outline" label="Notifications" index={1} />
+                            <ProfileMenuItem icon="shield-checkmark-outline" label="Security" index={2} />
+                            <ProfileMenuItem icon="language-outline" label="Language" index={3} />
+                        </View>
                     </View>
-                </View>
 
-                <View style={styles.menuSection}>
-                    <Text style={styles.menuSectionTitle}>Support</Text>
-                    <View style={styles.menuCard}>
-                        <ProfileMenuItem icon="help-circle-outline" label="Help Center" />
-                        <ProfileMenuItem icon="chatbubble-outline" label="Contact Us" />
-                        <ProfileMenuItem icon="document-text-outline" label="Terms & Privacy" />
+                    <View style={styles.menuSection}>
+                        <Text style={styles.menuSectionTitle}>Support</Text>
+                        <View style={styles.menuCard}>
+                            <ProfileMenuItem icon="help-circle-outline" label="Help Center" index={4} />
+                            <ProfileMenuItem icon="chatbubble-outline" label="Contact Us" index={5} />
+                            <ProfileMenuItem icon="document-text-outline" label="Terms & Privacy" index={6} />
+                        </View>
                     </View>
-                </View>
 
-                <View style={styles.menuSection}>
-                    <View style={styles.menuCard}>
-                        <ProfileMenuItem
-                            icon="log-out-outline"
-                            label="Log Out"
-                            isDestructive
-                            onPress={logout}
-                        />
+                    <View style={styles.menuSection}>
+                        <View style={styles.menuCard}>
+                            <ProfileMenuItem
+                                icon="log-out-outline"
+                                label="Log Out"
+                                isDestructive
+                                onPress={logout}
+                                index={7}
+                            />
+                        </View>
                     </View>
-                </View>
 
-                {/* App Version */}
-                <Text style={styles.versionText}>Version 1.0.0</Text>
+                    {/* App Version */}
+                    <Text style={styles.versionText}>Version 1.0.0</Text>
+                </Animated.View>
             </ScrollView>
         </SafeAreaView>
     );

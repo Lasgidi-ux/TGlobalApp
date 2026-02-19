@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import {
     View,
     Text,
@@ -6,6 +6,7 @@ import {
     StyleSheet,
     TouchableOpacity,
     StatusBar,
+    Animated,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -39,8 +40,24 @@ export const RoosterScreen: React.FC = () => {
         closeShiftDetail,
     } = useScheduleStore();
 
+    const headerOpacity = useRef(new Animated.Value(0)).current;
+    const headerTranslateY = useRef(new Animated.Value(-15)).current;
+
     useEffect(() => {
         fetchShifts();
+        Animated.parallel([
+            Animated.timing(headerOpacity, {
+                toValue: 1,
+                duration: 500,
+                useNativeDriver: true,
+            }),
+            Animated.spring(headerTranslateY, {
+                toValue: 0,
+                friction: 8,
+                tension: 50,
+                useNativeDriver: true,
+            }),
+        ]).start();
     }, []);
 
     // Time slots corresponding to shifts
@@ -72,16 +89,24 @@ export const RoosterScreen: React.FC = () => {
             <StatusBar barStyle="dark-content" backgroundColor={colors.background} />
 
             {/* Header */}
-            <View style={styles.header}>
+            <Animated.View
+                style={[
+                    styles.header,
+                    {
+                        opacity: headerOpacity,
+                        transform: [{ translateY: headerTranslateY }],
+                    },
+                ]}
+            >
                 <Text style={styles.headerTitle}>Mijn rooster</Text>
-                <TouchableOpacity style={styles.menuButton}>
+                <TouchableOpacity style={styles.menuButton} activeOpacity={0.7}>
                     <Ionicons
                         name="ellipsis-vertical"
                         size={20}
                         color={colors.textPrimary}
                     />
                 </TouchableOpacity>
-            </View>
+            </Animated.View>
 
             {/* Month Navigator */}
             <MonthNavigator
@@ -125,7 +150,7 @@ export const RoosterScreen: React.FC = () => {
 
                         {/* Shift Card */}
                         <View style={styles.shiftCardContainer}>
-                            <ShiftCard shift={shift} onPress={openShiftDetail} />
+                            <ShiftCard shift={shift} onPress={openShiftDetail} index={index} />
                         </View>
                     </View>
                 ))}

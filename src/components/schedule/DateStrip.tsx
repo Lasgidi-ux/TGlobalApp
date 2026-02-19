@@ -1,10 +1,11 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import {
     View,
     Text,
     TouchableOpacity,
     StyleSheet,
     FlatList,
+    Animated,
 } from 'react-native';
 import { DayItem } from '../../types';
 import { colors, spacing } from '../../theme';
@@ -14,15 +15,40 @@ interface DateStripProps {
     onSelectDay: (day: DayItem) => void;
 }
 
-export const DateStrip: React.FC<DateStripProps> = ({ days, onSelectDay }) => {
-    const renderDay = ({ item }: { item: DayItem }) => {
-        const isSelected = item.isSelected;
+const AnimatedDay: React.FC<{
+    item: DayItem;
+    onSelectDay: (day: DayItem) => void;
+}> = ({ item, onSelectDay }) => {
+    const scaleAnim = useRef(new Animated.Value(1)).current;
 
-        return (
+    const handlePressIn = () => {
+        Animated.spring(scaleAnim, {
+            toValue: 0.9,
+            friction: 5,
+            tension: 100,
+            useNativeDriver: true,
+        }).start();
+    };
+
+    const handlePressOut = () => {
+        Animated.spring(scaleAnim, {
+            toValue: 1,
+            friction: 5,
+            tension: 40,
+            useNativeDriver: true,
+        }).start();
+    };
+
+    const isSelected = item.isSelected;
+
+    return (
+        <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
             <TouchableOpacity
                 style={[styles.dayItem, isSelected && styles.dayItemSelected]}
                 onPress={() => onSelectDay(item)}
-                activeOpacity={0.7}
+                onPressIn={handlePressIn}
+                onPressOut={handlePressOut}
+                activeOpacity={1}
             >
                 <Text
                     style={[styles.dateNumber, isSelected && styles.dateNumberSelected]}
@@ -42,13 +68,17 @@ export const DateStrip: React.FC<DateStripProps> = ({ days, onSelectDay }) => {
                 )}
                 {!item.hasEvent && <View style={styles.eventDotPlaceholder} />}
             </TouchableOpacity>
-        );
-    };
+        </Animated.View>
+    );
+};
 
+export const DateStrip: React.FC<DateStripProps> = ({ days, onSelectDay }) => {
     return (
         <FlatList
             data={days}
-            renderItem={renderDay}
+            renderItem={({ item }) => (
+                <AnimatedDay item={item} onSelectDay={onSelectDay} />
+            )}
             keyExtractor={(item, index) => `day-${index}`}
             horizontal
             showsHorizontalScrollIndicator={false}

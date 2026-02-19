@@ -1,10 +1,11 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import {
     View,
     Text,
     FlatList,
     StyleSheet,
     StatusBar,
+    Animated,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { usePublicationsStore, useUserStore } from '../store/index';
@@ -24,25 +25,49 @@ export const HomeScreen: React.FC = () => {
     } = usePublicationsStore();
     const { user } = useUserStore();
 
+    const headerOpacity = useRef(new Animated.Value(0)).current;
+    const headerTranslateY = useRef(new Animated.Value(-20)).current;
+
     useEffect(() => {
         fetchPublications();
+        // Animate header on mount
+        Animated.parallel([
+            Animated.timing(headerOpacity, {
+                toValue: 1,
+                duration: 600,
+                useNativeDriver: true,
+            }),
+            Animated.spring(headerTranslateY, {
+                toValue: 0,
+                friction: 8,
+                tension: 40,
+                useNativeDriver: true,
+            }),
+        ]).start();
     }, []);
 
     const publications = filteredPublications();
 
     const handlePublicationPress = (publication: Publication) => {
-        // Handle publication press - could navigate to detail
         console.log('Publication pressed:', publication.id);
     };
 
     const renderHeader = () => (
-        <View style={styles.headerContainer}>
+        <Animated.View
+            style={[
+                styles.headerContainer,
+                {
+                    opacity: headerOpacity,
+                    transform: [{ translateY: headerTranslateY }],
+                },
+            ]}
+        >
             {/* Welcome Row */}
             <View style={styles.welcomeRow}>
                 <View style={styles.welcomeTextContainer}>
                     <Text style={styles.welcomeTitle}>Welcome back 👋</Text>
                     <Text style={styles.welcomeSubtitle}>
-                        Start exploring publications
+                        Start exploring puplications
                     </Text>
                 </View>
                 {user && <Avatar uri={user.avatar} size={44} />}
@@ -58,7 +83,7 @@ export const HomeScreen: React.FC = () => {
 
             {/* Section Title */}
             <Text style={styles.sectionTitle}>Latest publications</Text>
-        </View>
+        </Animated.View>
     );
 
     if (isLoading) {
@@ -86,10 +111,11 @@ export const HomeScreen: React.FC = () => {
             <StatusBar barStyle="dark-content" backgroundColor={colors.background} />
             <FlatList
                 data={publications}
-                renderItem={({ item }) => (
+                renderItem={({ item, index }) => (
                     <PublicationCard
                         publication={item}
                         onPress={handlePublicationPress}
+                        index={index}
                     />
                 )}
                 keyExtractor={(item) => item.id}

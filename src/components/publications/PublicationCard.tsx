@@ -1,10 +1,11 @@
-import React from 'react';
+import React, { useRef, useEffect } from 'react';
 import {
     View,
     Text,
     Image,
     StyleSheet,
     TouchableOpacity,
+    Animated,
 } from 'react-native';
 import { Publication } from '../../types';
 import { Avatar, TagBadge } from '../common';
@@ -13,62 +14,113 @@ import { colors, spacing, borderRadius, shadows } from '../../theme';
 interface PublicationCardProps {
     publication: Publication;
     onPress?: (publication: Publication) => void;
+    index?: number;
 }
 
 export const PublicationCard: React.FC<PublicationCardProps> = ({
     publication,
     onPress,
+    index = 0,
 }) => {
+    const fadeAnim = useRef(new Animated.Value(0)).current;
+    const translateY = useRef(new Animated.Value(30)).current;
+    const scaleAnim = useRef(new Animated.Value(1)).current;
+
+    useEffect(() => {
+        Animated.parallel([
+            Animated.timing(fadeAnim, {
+                toValue: 1,
+                duration: 500,
+                delay: index * 150,
+                useNativeDriver: true,
+            }),
+            Animated.spring(translateY, {
+                toValue: 0,
+                friction: 8,
+                tension: 40,
+                delay: index * 150,
+                useNativeDriver: true,
+            }),
+        ]).start();
+    }, []);
+
+    const handlePressIn = () => {
+        Animated.spring(scaleAnim, {
+            toValue: 0.97,
+            friction: 8,
+            tension: 100,
+            useNativeDriver: true,
+        }).start();
+    };
+
+    const handlePressOut = () => {
+        Animated.spring(scaleAnim, {
+            toValue: 1,
+            friction: 5,
+            tension: 40,
+            useNativeDriver: true,
+        }).start();
+    };
+
     return (
-        <TouchableOpacity
-            style={styles.container}
-            onPress={() => onPress?.(publication)}
-            activeOpacity={0.9}
+        <Animated.View
+            style={{
+                opacity: fadeAnim,
+                transform: [{ translateY }, { scale: scaleAnim }],
+            }}
         >
-            {/* Publication Image */}
-            <View style={styles.imageContainer}>
-                <Image
-                    source={{ uri: publication.imageUrl }}
-                    style={styles.image}
-                    resizeMode="cover"
-                />
-            </View>
-
-            {/* Tags */}
-            <View style={styles.tagsContainer}>
-                {publication.tags.map((tag) => (
-                    <TagBadge
-                        key={tag.id}
-                        label={tag.label}
-                        color={tag.color}
-                        textColor={tag.textColor}
+            <TouchableOpacity
+                style={styles.container}
+                onPress={() => onPress?.(publication)}
+                onPressIn={handlePressIn}
+                onPressOut={handlePressOut}
+                activeOpacity={1}
+            >
+                {/* Publication Image */}
+                <View style={styles.imageContainer}>
+                    <Image
+                        source={{ uri: publication.imageUrl }}
+                        style={styles.image}
+                        resizeMode="cover"
                     />
-                ))}
-            </View>
+                </View>
 
-            {/* Title */}
-            <Text style={styles.title} numberOfLines={2}>
-                {publication.title}
-            </Text>
+                {/* Tags */}
+                <View style={styles.tagsContainer}>
+                    {publication.tags.map((tag) => (
+                        <TagBadge
+                            key={tag.id}
+                            label={tag.label}
+                            color={tag.color}
+                            textColor={tag.textColor}
+                        />
+                    ))}
+                </View>
 
-            {/* Description */}
-            <Text style={styles.description} numberOfLines={2}>
-                {publication.description}
-            </Text>
+                {/* Title */}
+                <Text style={styles.title} numberOfLines={2}>
+                    {publication.title}
+                </Text>
 
-            {/* Author Row */}
-            <View style={styles.authorRow}>
-                <Avatar uri={publication.author.avatar} size={36} />
-                <View style={styles.authorInfo}>
-                    <Text style={styles.authorName}>{publication.author.name}</Text>
-                    <View style={styles.metaRow}>
-                        <Text style={styles.metaText}>{publication.publishedDate}</Text>
-                        <View style={styles.metaDot} />
-                        <Text style={styles.metaText}>{publication.readTime}</Text>
+                {/* Description */}
+                <Text style={styles.description} numberOfLines={2}>
+                    {publication.description}
+                </Text>
+
+                {/* Author Row */}
+                <View style={styles.authorRow}>
+                    <Avatar uri={publication.author.avatar} size={36} />
+                    <View style={styles.authorInfo}>
+                        <Text style={styles.authorName}>{publication.author.name}</Text>
+                        <View style={styles.metaRow}>
+                            <Text style={styles.metaText}>{publication.publishedDate}</Text>
+                            <View style={styles.metaDot} />
+                            <Text style={styles.metaText}>{publication.readTime}</Text>
+                        </View>
                     </View>
                 </View>
-            </View>
-        </TouchableOpacity>
+            </TouchableOpacity>
+        </Animated.View>
     );
 };
 

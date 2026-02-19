@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef, useEffect } from 'react';
 import {
     View,
     Text,
@@ -27,35 +27,93 @@ export const ShiftDetailSheet: React.FC<ShiftDetailSheetProps> = ({
     visible,
     onClose,
 }) => {
+    const slideAnim = useRef(new Animated.Value(SCREEN_HEIGHT)).current;
+    const backdropOpacity = useRef(new Animated.Value(0)).current;
+    const contentOpacity = useRef(new Animated.Value(0)).current;
+
+    useEffect(() => {
+        if (visible) {
+            Animated.parallel([
+                Animated.spring(slideAnim, {
+                    toValue: 0,
+                    friction: 8,
+                    tension: 45,
+                    useNativeDriver: true,
+                }),
+                Animated.timing(backdropOpacity, {
+                    toValue: 1,
+                    duration: 300,
+                    useNativeDriver: true,
+                }),
+                Animated.timing(contentOpacity, {
+                    toValue: 1,
+                    duration: 400,
+                    delay: 200,
+                    useNativeDriver: true,
+                }),
+            ]).start();
+        } else {
+            Animated.parallel([
+                Animated.timing(slideAnim, {
+                    toValue: SCREEN_HEIGHT,
+                    duration: 250,
+                    useNativeDriver: true,
+                }),
+                Animated.timing(backdropOpacity, {
+                    toValue: 0,
+                    duration: 200,
+                    useNativeDriver: true,
+                }),
+                Animated.timing(contentOpacity, {
+                    toValue: 0,
+                    duration: 150,
+                    useNativeDriver: true,
+                }),
+            ]).start();
+        }
+    }, [visible]);
+
     if (!shift) return null;
 
     return (
         <Modal
             visible={visible}
             transparent
-            animationType="slide"
+            animationType="none"
             onRequestClose={onClose}
         >
             <View style={styles.overlay}>
-                <TouchableOpacity
-                    style={styles.backdrop}
-                    activeOpacity={1}
-                    onPress={onClose}
-                />
-                <View style={styles.sheet}>
+                <Animated.View
+                    style={[
+                        styles.backdrop,
+                        { opacity: backdropOpacity },
+                    ]}
+                >
+                    <TouchableOpacity
+                        style={StyleSheet.absoluteFill}
+                        activeOpacity={1}
+                        onPress={onClose}
+                    />
+                </Animated.View>
+                <Animated.View
+                    style={[
+                        styles.sheet,
+                        { transform: [{ translateY: slideAnim }] },
+                    ]}
+                >
                     {/* Handle */}
                     <View style={styles.handleContainer}>
                         <View style={styles.handle} />
                     </View>
 
-                    <ScrollView
-                        style={styles.scrollContent}
+                    <Animated.ScrollView
+                        style={[styles.scrollContent, { opacity: contentOpacity }]}
                         showsVerticalScrollIndicator={false}
                         bounces={false}
                     >
                         {/* Header */}
                         <View style={styles.header}>
-                            <TouchableOpacity onPress={onClose} style={styles.backButton}>
+                            <TouchableOpacity onPress={onClose} style={styles.backButton} activeOpacity={0.7}>
                                 <Ionicons
                                     name="chevron-back"
                                     size={22}
@@ -63,7 +121,7 @@ export const ShiftDetailSheet: React.FC<ShiftDetailSheetProps> = ({
                                 />
                             </TouchableOpacity>
                             <Text style={styles.headerTitle}>Shift Details</Text>
-                            <TouchableOpacity onPress={onClose} style={styles.closeButton}>
+                            <TouchableOpacity onPress={onClose} style={styles.closeButton} activeOpacity={0.7}>
                                 <Ionicons name="close" size={22} color={colors.textPrimary} />
                             </TouchableOpacity>
                         </View>
@@ -154,7 +212,7 @@ export const ShiftDetailSheet: React.FC<ShiftDetailSheetProps> = ({
                         <View style={styles.section}>
                             <View style={styles.notitiesHeader}>
                                 <Text style={styles.sectionTitle}>Notities</Text>
-                                <TouchableOpacity style={styles.notitiesLink}>
+                                <TouchableOpacity style={styles.notitiesLink} activeOpacity={0.7}>
                                     <Text style={styles.notitiesLinkText}>
                                         {shift.notes?.length || 3} notities
                                     </Text>
@@ -184,8 +242,8 @@ export const ShiftDetailSheet: React.FC<ShiftDetailSheetProps> = ({
                                 </View>
                             ))}
                         </View>
-                    </ScrollView>
-                </View>
+                    </Animated.ScrollView>
+                </Animated.View>
             </View>
         </Modal>
     );
