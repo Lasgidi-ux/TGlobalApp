@@ -1,5 +1,5 @@
-import React, { useRef, useEffect } from 'react';
-import { StyleSheet, View, Platform, Animated } from 'react-native';
+import React from 'react';
+import { StyleSheet, View, Platform } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
 import {
@@ -13,81 +13,42 @@ import { colors, shadows } from '../theme';
 
 const Tab = createBottomTabNavigator<RootTabParamList>();
 
-const AnimatedTabIcon: React.FC<{
-    routeName: keyof RootTabParamList;
-    focused: boolean;
-    color: string;
-}> = ({ routeName, focused, color }) => {
-    const scaleAnim = useRef(new Animated.Value(focused ? 1 : 0.85)).current;
-    const bgAnim = useRef(new Animated.Value(focused ? 1 : 0)).current;
-
-    useEffect(() => {
-        Animated.parallel([
-            Animated.spring(scaleAnim, {
-                toValue: focused ? 1 : 0.85,
-                friction: 5,
-                tension: 100,
-                useNativeDriver: true,
-            }),
-            Animated.timing(bgAnim, {
-                toValue: focused ? 1 : 0,
-                duration: 200,
-                useNativeDriver: false,
-            }),
-        ]).start();
-    }, [focused]);
-
-    let iconName: keyof typeof Ionicons.glyphMap;
-
-    switch (routeName) {
-        case 'Home':
-            iconName = focused ? 'home' : 'home-outline';
-            break;
-        case 'Rooster':
-            iconName = focused ? 'calendar' : 'calendar-outline';
-            break;
-        case 'Publications':
-            iconName = focused ? 'newspaper' : 'newspaper-outline';
-            break;
-        case 'Profile':
-            iconName = focused ? 'person' : 'person-outline';
-            break;
-        default:
-            iconName = 'home-outline';
-    }
-
-    const backgroundColor = bgAnim.interpolate({
-        inputRange: [0, 1],
-        outputRange: ['transparent', colors.primaryLight],
-    });
-
-    return (
-        <Animated.View
-            style={[
-                styles.iconContainer,
-                {
-                    backgroundColor,
-                    transform: [{ scale: scaleAnim }],
-                },
-            ]}
-        >
-            <Ionicons name={iconName} size={22} color={color} />
-        </Animated.View>
-    );
-};
-
 export const TabNavigator: React.FC = () => {
     return (
         <Tab.Navigator
             screenOptions={({ route }) => ({
                 headerShown: false,
-                tabBarIcon: ({ focused, color }) => (
-                    <AnimatedTabIcon
-                        routeName={route.name}
-                        focused={focused}
-                        color={color}
-                    />
-                ),
+                tabBarIcon: ({ focused, color }) => {
+                    let iconName: keyof typeof Ionicons.glyphMap;
+
+                    switch (route.name) {
+                        case 'Home':
+                            iconName = focused ? 'home' : 'home-outline';
+                            break;
+                        case 'Rooster':
+                            iconName = focused ? 'calendar' : 'calendar-outline';
+                            break;
+                        case 'Publications':
+                            iconName = focused ? 'newspaper' : 'newspaper-outline';
+                            break;
+                        case 'Profile':
+                            iconName = focused ? 'person' : 'person-outline';
+                            break;
+                        default:
+                            iconName = 'home-outline';
+                    }
+
+                    return (
+                        <View
+                            style={[
+                                styles.iconContainer,
+                                focused && styles.iconContainerActive,
+                            ]}
+                        >
+                            <Ionicons name={iconName} size={22} color={color} />
+                        </View>
+                    );
+                },
                 tabBarActiveTintColor: colors.tabBarActive,
                 tabBarInactiveTintColor: colors.tabBarInactive,
                 tabBarStyle: styles.tabBar,
@@ -143,5 +104,8 @@ const styles = StyleSheet.create({
         width: 44,
         height: 30,
         borderRadius: 15,
+    },
+    iconContainerActive: {
+        backgroundColor: colors.primaryLight,
     },
 });
